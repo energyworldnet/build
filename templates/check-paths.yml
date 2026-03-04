@@ -8,7 +8,7 @@ parameters:
 
 jobs:
 - job: Check
-  displayName: Check
+  displayName: Changed Paths
   dependsOn: []
   steps:
   - checkout: self
