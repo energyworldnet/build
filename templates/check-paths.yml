@@ -14,6 +14,10 @@ jobs:
   - checkout: self
     fetchDepth: ${{ parameters.fetchDepth }}
     fetchFilter: blob:none
+    persistCredentials: true
+  - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+    - bash: git fetch origin $(System.PullRequest.TargetBranch) --filter=blob:none --depth=1
+      displayName: Fetch target branch
   - bash: |
       cat <<'EOF' > /tmp/check-paths.mjs
       import { execSync } from 'child_process';
@@ -67,7 +71,6 @@ jobs:
 
       if (process.env.BUILD_REASON === 'PullRequest') {
         const target = process.env.SYSTEM_PULLREQUEST_TARGETBRANCH.replace('refs/heads/', '');
-        run(`git fetch origin ${target} --depth=1`);
         console.log(`PR build — diffing against origin/${target}`);
         try {
           changedPaths = run(`git diff --name-only origin/${target}...HEAD`).split('\n').filter(Boolean);
