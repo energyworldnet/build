@@ -67,6 +67,7 @@ jobs:
 
       if (process.env.BUILD_REASON === 'PullRequest') {
         const target = process.env.SYSTEM_PULLREQUEST_TARGETBRANCH.replace('refs/heads/', '');
+        run(`git fetch origin ${target} --depth=1`);
         console.log(`PR build — diffing against origin/${target}`);
         try {
           changedPaths = run(`git diff --name-only origin/${target}...HEAD`).split('\n').filter(Boolean);
