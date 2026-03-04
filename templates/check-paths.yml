@@ -63,25 +63,35 @@ jobs:
       );
       const shas = changes.value.map((c) => c.id).filter(Boolean);
 
-      if (shas.length === 0) {
-        defaultAllTrue('No commits found (manual/re-run) — defaulting all groups to true');
-      }
+      let changedPaths;
 
-      for (const sha of shas) {
+      if (process.env.BUILD_REASON === 'PullRequest') {
+        const target = process.env.SYSTEM_PULLREQUEST_TARGETBRANCH.replace('refs/heads/', '');
+        console.log(`PR build — diffing against origin/${target}`);
         try {
-          run(`git cat-file -e ${sha}`);
+          changedPaths = run(`git diff --name-only origin/${target}...HEAD`).split('\n').filter(Boolean);
         } catch {
-          defaultAllTrue(`Commit ${sha} not in shallow clone — defaulting all groups to true`);
+          defaultAllTrue('Merge base not in shallow clone — defaulting all groups to true');
         }
-      }
+      } else if (shas.length === 0) {
+        defaultAllTrue('No commits found (manual/re-run) — defaulting all groups to true');
+      } else {
+        for (const sha of shas) {
+          try {
+            run(`git cat-file -e ${sha}`);
+          } catch {
+            defaultAllTrue(`Commit ${sha} not in shallow clone — defaulting all groups to true`);
+          }
+        }
 
-      const changedPaths = [
-        ...new Set(
-          shas.flatMap((sha) =>
-            run(`git diff-tree --no-commit-id --name-only -r ${sha}`).split('\n').filter(Boolean),
+        changedPaths = [
+          ...new Set(
+            shas.flatMap((sha) =>
+              run(`git diff-tree --no-commit-id --name-only -r ${sha}`).split('\n').filter(Boolean),
+            ),
           ),
-        ),
-      ];
+        ];
+      }
 
       console.log('Changed paths:');
       changedPaths.forEach((p) => console.log(`  ${p}`));
