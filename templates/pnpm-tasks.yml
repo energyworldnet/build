@@ -1,0 +1,53 @@
+parameters:
+- name: version
+  type: string
+  default: ^10
+- name: useCache
+  type: boolean
+  default: true
+
+steps:
+  # Pin the major pnpm version so we don't have compatibility issues with new lock file formats
+  - script: npm -g install pnpm@${{ parameters.version }}
+    displayName: Install pnpm
+
+  - ${{ if eq(parameters.useCache, true) }}:
+      # Set the pnpm store path explicitly to have a reliable path for caching
+      # https://pnpm.io/faq#does-pnpm-work-across-multiple-drives-or-filesystems
+      - script: pnpm config set store-dir $(PnpmStorePath)
+        displayName: Set pnpm Store Path
+
+      # Cache pnpm store since it can be fairly large in size. It should be faster to restore cache
+      # than to redownload all of the packages from npm feeds
+      - task: Cache@2
+        displayName: Restore pnpm Cache
+        inputs:
+          key: 'pnpm | "$(Agent.OS)" | **/pnpm-lock.yaml'
+          restoreKeys: |
+            pnpm | "$(Agent.OS)"
+            pnpm
+          path: $(PnpmStorePath)
+          cacheHitVar: PnpmCacheRestored
+
+  # Authenticate against our internal npm feed in Azure Artifacts
+  - task: npmAuthenticate@0
+    displayName: Authenticate pnpm
+    inputs:
+      workingFile: .npmrc
+
+  # Restore with the lock file to avoid unverified dependency changes. This still needs to happen
+  # on cache hit to ensure allowed package scripts are run, but it should be faster due to not
+  # having to download the dependencies
+  # HACK: There are various bugs around reporting peer resolution issues, so we have to call twice
+  # https://github.com/pnpm/pnpm/issues/7087
+  # https://github.com/pnpm/pnpm/issues/8433
+  - script: |
+      pnpm install --frozen-lockfile
+      pnpm install --prefer-frozen-lockfile --resolution-only
+    displayName: Restore pnpm
+
+  # Prune the pnpm store on cache miss to prevent unused dependencies from being re-cached
+  - ${{ if eq(parameters.useCache, true) }}:
+      - script: pnpm store prune
+        condition: ne(variables.PnpmCacheRestored, 'true')
+        displayName: Prune pnpm Store

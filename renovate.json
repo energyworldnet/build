@@ -1,0 +1,32 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "datasourceTemplate": "github-releases",
+      "managerFilePatterns": [
+        "\\.ya?ml$"
+      ],
+      "matchStrings": [
+        "https://github.com/(?<depName>[\\w-]+/[\\w-]+)/raw/(?<currentValue>[\\w\\.-]+)//",
+        "https://raw.githubusercontent.com/(?<depName>[\\w-]+/[\\w-]+)/(?<currentValue>[\\w\\.-]+)/",
+        "https://github.com/(?<depName>[\\w-]+/[\\w-]+)/releases/download/(?<currentValue>[\\w\\.-]+)/"
+      ],
+      "matchStringsStrategy": "any"
+    },
+    {
+      "customType": "regex",
+      "datasourceTemplate": "custom.hashicorp",
+      "managerFilePatterns": [
+        "\\.ya?ml$"
+      ],
+      "matchStrings": [
+        "#\\s*renovate:\\s*(datasource=(?<datasource>.*?) )?depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s*\\w*:\\s*(?<currentValue>.*)\\s"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    }
+  ],
+  "extends": [
+    "github>energyworldnet/renovate-config-private"
+  ]
+}

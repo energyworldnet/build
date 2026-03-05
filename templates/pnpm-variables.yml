@@ -1,0 +1,2 @@
+variables:
+  PnpmStorePath: $(Pipeline.Workspace)/.pnpm-store
