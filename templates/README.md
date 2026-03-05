@@ -1,6 +1,6 @@
 # Azure Pipelines Templates
 
-## `check-paths.yml`
+## `detect-changed-paths.yml`
 
 Path-based change detection. Outputs boolean variables per path group so downstream stages can conditionally run.
 
@@ -15,7 +15,7 @@ Path-based change detection. Outputs boolean variables per path group so downstr
 
 ```yaml
 jobs:
-- template: templates/check-paths.yml@build
+- template: templates/detect-changed-paths.yml@build
   parameters:
     pathGroups:
       build:
@@ -24,7 +24,7 @@ jobs:
         - package.json
 ```
 
-Outputs are available as `dependencies.Check.outputs['Check.filter.<group>']`.
+Outputs are available as `dependencies.<stage>.outputs['DetectChangedPaths.pathGroups.<group>']`.
 
 ## `publish-github-pages.yml`
 

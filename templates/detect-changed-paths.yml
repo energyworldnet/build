@@ -7,8 +7,8 @@ parameters:
   default: 100
 
 jobs:
-- job: Check
-  displayName: Changed Paths
+- job: DetectChangedPaths
+  displayName: Detect Changed Paths
   dependsOn: []
   steps:
   - checkout: self
@@ -19,7 +19,7 @@ jobs:
     - bash: git fetch origin $(System.PullRequest.TargetBranch) --filter=blob:none --depth=1
       displayName: Fetch target branch
   - bash: |
-      cat <<'EOF' > /tmp/check-paths.mjs
+      cat <<'EOF' > /tmp/detect-changed-paths.mjs
       import { execSync } from 'child_process';
 
       const pathGroups = ${{ convertToJson(parameters.pathGroups) }};
@@ -111,9 +111,9 @@ jobs:
         console.log(`  ${group} = ${matched}`);
       }
       EOF
-      node /tmp/check-paths.mjs
+      node /tmp/detect-changed-paths.mjs
     displayName: Detect changed paths
-    name: filter
+    name: pathGroups
     env:
       ACCESS_TOKEN: $(System.AccessToken)
       API_BASE: $(System.CollectionUri)$(System.TeamProject)/_apis
