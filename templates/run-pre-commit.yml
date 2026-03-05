@@ -1,95 +1,96 @@
+---
 parameters:
-- name: pnpmCommands
-  type: object
-  default: []
-- name: terraformVersion
-  type: string
-  # renovate: depName=terraform
-  default: 1.12.1
-- name: useDotNet
-  type: boolean
-  default: false
-- name: usePnpm
-  type: boolean
-  default: false
-- name: pnpmVersion
-  type: string
-  default: ^10
-- name: usePnpmCache
-  type: boolean
-  default: true
-- name: useTerraform
-  type: boolean
-  default: false
-- name: vmImage
-  type: string
-  default: ubuntu-latest
+  - name: pnpmCommands
+    type: object
+    default: []
+  - name: terraformVersion
+    type: string
+    # renovate: depName=terraform
+    default: 1.12.1
+  - name: useDotNet
+    type: boolean
+    default: false
+  - name: usePnpm
+    type: boolean
+    default: false
+  - name: pnpmVersion
+    type: string
+    default: ^10
+  - name: usePnpmCache
+    type: boolean
+    default: true
+  - name: useTerraform
+    type: boolean
+    default: false
+  - name: vmImage
+    type: string
+    default: ubuntu-latest
 
 jobs:
-- job: RunPreCommit
-  condition: eq(variables['Build.Reason'], 'PullRequest')
-  displayName: Run Pre-Commit
-  pool:
-    vmImage: ${{ parameters.vmImage }}
-  steps:
-    - checkout: self
-      persistCredentials: true
-    # This is necessary to do a diff between the PR and the target branch
-    - script: git fetch --no-tags --depth=1 origin $(System.PullRequest.TargetBranch)
-      displayName: Fetch Target Branch
-    - ${{ if eq(parameters.useDotNet, true) }}:
-        - task: NuGetAuthenticate@1
-          displayName: Authenticate NuGet Internal
-        - script: dotnet tool restore
-          displayName: Install .NET Tools
-    - ${{ if eq(parameters.usePnpm, true) }}:
-        - template: pnpm-tasks.yml
-          parameters:
-            version: ${{ parameters.pnpmVersion }}
-            useCache: ${{ parameters.usePnpmCache }}
-        # pre-commit stashes unstaged changes, so we need to stage .npmrc so it can authenticate
-        - script: git add .npmrc
-          displayName: Stage .npmrc
-        - ${{ each command in parameters.pnpmCommands }}:
-            - script: pnpm ${{ command }}
-              displayName: pnpm ${{ command }}
-    - ${{ if eq(parameters.useTerraform, true) }}:
-        # Terraform is no longer installed by default on the ubuntu-latest image
-        # https://marketplace.visualstudio.com/items?itemName=ms-devlabs.custom-terraform-tasks
-        - task: TerraformInstaller@1
-          displayName: Install Terraform ${{ parameters.terraformVersion }}
-          inputs:
-            terraformVersion: ${{ parameters.terraformVersion }}
-        - script: |
-            INSTALL_URL="\
-              https://raw.githubusercontent.com/terraform-linters/tflint/v0.58.0/install_linux.sh"
-            curl -s $INSTALL_URL | bash
-          displayName: Install TFLint
-    # Adapted from pre-commit docs:
-    # https://pre-commit.com/index.html#azure-pipelines-example
-    - script: echo "##vso[task.setvariable variable=PythonVersion;]$(python -VV)"
-      displayName: Get Python Version
-    - task: Cache@2
-      displayName: Restore Pre-Commit Cache
-      inputs:
-        key: pre-commit | .pre-commit-config.yaml | "$(PythonVersion)"
-        path: $(PRE_COMMIT_HOME)
-    - script: pip install -r requirements.txt
-      displayName: Install Python Dependencies
-    - script: |
-        pre-commit run \
-          --color=always \
-          --show-diff-on-failure \
-          --verbose \
-          --from-ref=origin/$(System.PullRequest.TargetBranch) \
-          --to-ref=$(System.PullRequest.SourceCommitId)
-      displayName: Run Pre-Commit Checks
-  variables:
-    # Enable pre-commit to access private npm feed
-    # https://github.com/pre-commit/pre-commit/issues/1452#issuecomment-2209253779
-    - name: NPM_CONFIG_GLOBALCONFIG
-      value: $(Build.SourcesDirectory)/.npmrc
-    - name: PRE_COMMIT_HOME
-      value: $(Pipeline.Workspace)/pre-commit-cache
-    - ${{ if eq(parameters.usePnpm, true) }}:
-        - template: pnpm-variables.yml
+  - job: RunPreCommit
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+    displayName: Run Pre-Commit
+    pool:
+      vmImage: ${{ parameters.vmImage }}
+    steps:
+      - checkout: self
+        persistCredentials: true
+      # This is necessary to do a diff between the PR and the target branch
+      - script: git fetch --no-tags --depth=1 origin +refs/heads/*:refs/remotes/origin/*
+        displayName: Fetch Branches
+      - ${{ if eq(parameters.useDotNet, true) }}:
+          - task: NuGetAuthenticate@1
+            displayName: Authenticate NuGet Internal
+          - script: dotnet tool restore
+            displayName: Install .NET Tools
+      - ${{ if eq(parameters.usePnpm, true) }}:
+          - template: pnpm-tasks.yml
+            parameters:
+              version: ${{ parameters.pnpmVersion }}
+              useCache: ${{ parameters.usePnpmCache }}
+          # pre-commit stashes unstaged changes, so we need to stage .npmrc so it can authenticate
+          - script: git add .npmrc
+            displayName: Stage .npmrc
+          - ${{ each command in parameters.pnpmCommands }}:
+              - script: pnpm ${{ command }}
+                displayName: pnpm ${{ command }}
+      - ${{ if eq(parameters.useTerraform, true) }}:
+          # Terraform is no longer installed by default on the ubuntu-latest image
+          # https://marketplace.visualstudio.com/items?itemName=ms-devlabs.custom-terraform-tasks
+          - task: TerraformInstaller@1
+            displayName: Install Terraform ${{ parameters.terraformVersion }}
+            inputs:
+              terraformVersion: ${{ parameters.terraformVersion }}
+          - script: |
+              INSTALL_URL="\
+                https://raw.githubusercontent.com/terraform-linters/tflint/v0.58.0/install_linux.sh"
+              curl -s $INSTALL_URL | bash
+            displayName: Install TFLint
+      # Adapted from pre-commit docs:
+      # https://pre-commit.com/index.html#azure-pipelines-example
+      - script: echo "##vso[task.setvariable variable=PythonVersion;]$(python -VV)"
+        displayName: Get Python Version
+      - task: Cache@2
+        displayName: Restore Pre-Commit Cache
+        inputs:
+          key: pre-commit | .pre-commit-config.yaml | "$(PythonVersion)"
+          path: $(PRE_COMMIT_HOME)
+      - script: pip install -r requirements.txt
+        displayName: Install Python Dependencies
+      - script: |
+          pre-commit run \
+            --color=always \
+            --show-diff-on-failure \
+            --verbose \
+            --from-ref=origin/$(System.PullRequest.TargetBranch) \
+            --to-ref=$(System.PullRequest.SourceCommitId)
+        displayName: Run Pre-Commit Checks
+    variables:
+      # Enable pre-commit to access private npm feed
+      # https://github.com/pre-commit/pre-commit/issues/1452#issuecomment-2209253779
+      - name: NPM_CONFIG_GLOBALCONFIG
+        value: $(Build.SourcesDirectory)/.npmrc
+      - name: PRE_COMMIT_HOME
+        value: $(Pipeline.Workspace)/pre-commit-cache
+      - ${{ if eq(parameters.usePnpm, true) }}:
+          - template: pnpm-variables.yml

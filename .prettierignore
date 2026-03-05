@@ -1,0 +1,18 @@
+# https://stackoverflow.com/a/70715829/1409101
+
+# Ignore everything
+*
+
+# Except JSON/YAML files
+!*.json
+!*.jsonc
+!*.json5
+!*.yml
+!*.yaml
+
+# Ignore lock files
+**/*lock.json
+**/*lock.yaml
+
+# Subdirectories
+!*/

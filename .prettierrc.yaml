@@ -1,0 +1,16 @@
+---
+endOfLine: auto
+jsonRecursiveSort: true
+overrides:
+  - files: ['*.yml', '*.yaml']
+    options:
+      # HACK: YAML prose is not handled correctly yet
+      # https://github.com/prettier/prettier/issues/16126#issuecomment-1987616924
+      proseWrap: preserve
+plugins:
+  - prettier-plugin-multiline-arrays
+  - prettier-plugin-sort-json
+printWidth: 100
+proseWrap: always
+# Justification: We lean towards single quotes across TypeScript and YAML
+singleQuote: true

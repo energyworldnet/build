@@ -1,36 +1,37 @@
+---
 parameters:
-- name: artifact
-  type: string
+  - name: artifact
+    type: string
 
 jobs:
-- deployment: PublishGitHubPages
-  displayName: Publish GitHub Pages
-  environment: github-pages
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - download: none
-        - download: current
-          displayName: Download Site
-          artifact: ${{ parameters.artifact }}
-        - checkout: self
-          clean: true
-          displayName: Checkout Repository
-          fetchDepth: 1
-          persistCredentials: true
-        - script: |
-            git config --global user.name "EWN Bot"
-            git config --global user.email "ewnbot@energyworldnet.com"
-            git fetch origin gh-pages
-            git switch gh-pages || git switch --track origin/gh-pages
-            find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-            cp -a ../${{ parameters.artifact }}/. .
-            git add -A
-            if git diff --cached --quiet; then
-              echo "No site changes to deploy"
-              exit 0
-            fi
-            git commit -m "Deploy $(Build.SourceVersion)"
-            git push origin gh-pages
-          displayName: Publish GitHub Pages
+  - deployment: PublishGitHubPages
+    displayName: Publish GitHub Pages
+    environment: github-pages
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - download: none
+            - download: current
+              displayName: Download Site
+              artifact: ${{ parameters.artifact }}
+            - checkout: self
+              clean: true
+              displayName: Checkout Repository
+              fetchDepth: 1
+              persistCredentials: true
+            - script: |
+                git config --global user.name "EWN Bot"
+                git config --global user.email "ewnbot@energyworldnet.com"
+                git fetch origin gh-pages
+                git switch gh-pages || git switch --track origin/gh-pages
+                find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+                cp -a ../${{ parameters.artifact }}/. .
+                git add -A
+                if git diff --cached --quiet; then
+                  echo "No site changes to deploy"
+                  exit 0
+                fi
+                git commit -m "Deploy $(Build.SourceVersion)"
+                git push origin gh-pages
+              displayName: Publish GitHub Pages

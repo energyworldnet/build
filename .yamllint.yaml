@@ -1,0 +1,8 @@
+---
+extends: default
+ignore: ['*lock.yaml']
+rules:
+  line-length:
+    max: 100
+  # Justification: New lines are tricky cross-platform
+  new-lines: disable
