@@ -28,16 +28,21 @@ Outputs are available as `dependencies.<stage>.outputs['DetectChangedPaths.pathG
 Runs [pre-commit](https://pre-commit.com/) checks on pull requests. Supports optional .NET, pnpm,
 and Terraform toolchains.
 
-| Parameter          | Type    | Default         | Purpose                           |
-| ------------------ | ------- | --------------- | --------------------------------- |
-| `pnpmCommands`     | object  | `[]`            | Extra pnpm commands before checks |
-| `terraformVersion` | string  | `1.12.1`        | Terraform version to install      |
-| `useDotNet`        | boolean | `false`         | Restore .NET tools                |
-| `usePnpm`          | boolean | `false`         | Install and restore pnpm deps     |
-| `pnpmVersion`      | string  | `^10`           | pnpm version constraint           |
-| `usePnpmCache`     | boolean | `true`          | Cache the pnpm store              |
-| `useTerraform`     | boolean | `false`         | Install Terraform and TFLint      |
-| `vmImage`          | string  | `ubuntu-latest` | Agent pool VM image               |
+On non-PR builds, a `ValidatePreCommit` job checks whether the branch is in `skipRefs`. If it is,
+the job succeeds silently. Otherwise it fails with an error to prevent bypassing pre-commit by
+manually triggering a build on a non-PR branch.
+
+| Parameter          | Type    | Default              | Purpose                                    |
+| ------------------ | ------- | -------------------- | ------------------------------------------ |
+| `pnpmCommands`     | object  | `[]`                 | Extra pnpm commands before checks          |
+| `terraformVersion` | string  | `1.12.1`             | Terraform version to install               |
+| `useDotNet`        | boolean | `false`              | Restore .NET tools                         |
+| `usePnpm`          | boolean | `false`              | Install and restore pnpm deps              |
+| `pnpmVersion`      | string  | `^10`                | pnpm version constraint                    |
+| `usePnpmCache`     | boolean | `true`               | Cache the pnpm store                       |
+| `useTerraform`     | boolean | `false`              | Install Terraform and TFLint               |
+| `skipRefs`         | object  | `[refs/heads/main]`  | Branch refs that skip pre-commit on non-PR |
+| `vmImage`          | string  | `ubuntu-latest`      | Agent pool VM image                        |
 
 ```yaml
 jobs:
@@ -45,6 +50,10 @@ jobs:
     parameters:
       usePnpm: true
       useDotNet: true
+      skipRefs:
+        - refs/heads/dev
+        - refs/heads/test
+        - refs/heads/main
 ```
 
 ## `pnpm-tasks.yml`

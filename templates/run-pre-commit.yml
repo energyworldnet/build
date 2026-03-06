@@ -22,11 +22,37 @@ parameters:
   - name: useTerraform
     type: boolean
     default: false
+  - name: skipRefs
+    type: object
+    default:
+      - refs/heads/main
   - name: vmImage
     type: string
     default: ubuntu-latest
 
 jobs:
+  - job: ValidatePreCommit
+    condition: ne(variables['Build.Reason'], 'PullRequest')
+    displayName: Validate Pre-Commit
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - checkout: none
+      - bash: |
+          for ref in ${{ join(' ', parameters.skipRefs) }}; do
+            if [[ "$(Build.SourceBranch)" == "$ref" ]]; then
+              echo "Primary branch $ref — skipping pre-commit"
+              exit 0
+            fi
+          done
+          MSG="Pre-commit requires a PR build."
+          MSG+=" Manually running a PR branch does"
+          MSG+=" not set the PR variables needed by"
+          MSG+=" this job. Comment \`/azp run\` on"
+          MSG+=" the PR or target a primary branch."
+          echo "##vso[task.logissue type=error]$MSG"
+          exit 1
+        displayName: Validate Branch
   - job: RunPreCommit
     condition: eq(variables['Build.Reason'], 'PullRequest')
     displayName: Run Pre-Commit

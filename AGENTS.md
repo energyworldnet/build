@@ -27,7 +27,8 @@ resources:
 ## Templates
 
 - `run-pre-commit.yml` — Job template that runs pre-commit checks on PRs. Supports .NET, pnpm, and
-  Terraform toolchains.
+  Terraform toolchains. Non-PR builds on branches not in `skipRefs` fail to prevent bypassing
+  pre-commit.
 - `pnpm-tasks.yml` — Step template that installs pnpm, authenticates against an internal npm feed,
   and restores dependencies. Requires `pnpm-variables.yml`.
 - `pnpm-variables.yml` — Variable template that sets `PnpmStorePath`. Always pair with
