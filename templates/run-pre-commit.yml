@@ -35,6 +35,7 @@ jobs:
     condition: ne(variables['Build.Reason'], 'PullRequest')
     displayName: Validate Pre-Commit
     pool:
+      # Hardcoded to avoid consuming an expensive agent for a simple check
       vmImage: ubuntu-latest
     steps:
       - checkout: none
