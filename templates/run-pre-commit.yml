@@ -82,7 +82,7 @@ jobs:
             --color=always \
             --show-diff-on-failure \
             --verbose \
-            --from-ref=origin/$(System.PullRequest.TargetBranch) \
+            --from-ref=origin/$(System.PullRequest.targetBranchName) \
             --to-ref=$(System.PullRequest.SourceCommitId)
         displayName: Run Pre-Commit Checks
     variables:
