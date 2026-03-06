@@ -9,10 +9,11 @@ Add as a repository resource in your `azure-pipelines.yml`:
 ```yaml
 resources:
   repositories:
-  - repository: build
-    type: github
-    name: energyworldnet/build
-    endpoint: proddev
+    - repository: build
+      type: github
+      name: energyworldnet/build
+      endpoint: proddev
 ```
 
-Then reference pipeline templates. See [templates/](templates/) for available templates and parameter docs.
+Then reference pipeline templates. See [templates/](templates/) for available templates and
+parameter docs.

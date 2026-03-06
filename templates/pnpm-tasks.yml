@@ -1,10 +1,11 @@
+---
 parameters:
-- name: version
-  type: string
-  default: ^10
-- name: useCache
-  type: boolean
-  default: true
+  - name: version
+    type: string
+    default: ^10
+  - name: useCache
+    type: boolean
+    default: true
 
 steps:
   # Pin the major pnpm version so we don't have compatibility issues with new lock file formats

@@ -4,9 +4,7 @@
     {
       "customType": "regex",
       "datasourceTemplate": "github-releases",
-      "managerFilePatterns": [
-        "\\.ya?ml$"
-      ],
+      "managerFilePatterns": ["\\.ya?ml$"],
       "matchStrings": [
         "https://github.com/(?<depName>[\\w-]+/[\\w-]+)/raw/(?<currentValue>[\\w\\.-]+)//",
         "https://raw.githubusercontent.com/(?<depName>[\\w-]+/[\\w-]+)/(?<currentValue>[\\w\\.-]+)/",
@@ -17,16 +15,12 @@
     {
       "customType": "regex",
       "datasourceTemplate": "custom.hashicorp",
-      "managerFilePatterns": [
-        "\\.ya?ml$"
-      ],
+      "managerFilePatterns": ["\\.ya?ml$"],
       "matchStrings": [
         "#\\s*renovate:\\s*(datasource=(?<datasource>.*?) )?depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s*\\w*:\\s*(?<currentValue>.*)\\s"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     }
   ],
-  "extends": [
-    "github>energyworldnet/renovate-config-private"
-  ]
+  "extends": ["github>energyworldnet/renovate-config-private"]
 }

@@ -1,119 +1,131 @@
+---
 parameters:
-- name: pathGroups
-  type: object
-  default: {}
-- name: fetchDepth
-  type: number
-  default: 100
+  - name: pathGroups
+    type: object
+    default: {}
+  - name: fetchDepth
+    type: number
+    default: 100
 
 jobs:
-- job: DetectChangedPaths
-  displayName: Detect Changed Paths
-  dependsOn: []
-  steps:
-  - checkout: self
-    fetchDepth: ${{ parameters.fetchDepth }}
-    fetchFilter: blob:none
-    persistCredentials: true
-  - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
-    - bash: git fetch origin $(System.PullRequest.TargetBranch) --filter=blob:none --depth=1
-      displayName: Fetch target branch
-  - bash: |
-      cat <<'EOF' > /tmp/detect-changed-paths.mjs
-      import { execSync } from 'child_process';
+  - job: DetectChangedPaths
+    displayName: Detect Changed Paths
+    dependsOn: []
+    steps:
+      - checkout: self
+        fetchDepth: ${{ parameters.fetchDepth }}
+        fetchFilter: blob:none
+        persistCredentials: true
+      - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+          - bash: >-
+              git fetch origin $(System.PullRequest.TargetBranch)
+              --filter=blob:none --depth=1
+            displayName: Fetch target branch
+      - bash: |
+          cat <<'EOF' > /tmp/detect-changed-paths.mjs
+          import { execSync } from 'child_process';
 
-      const pathGroups = ${{ convertToJson(parameters.pathGroups) }};
-      const apiBase = process.env.API_BASE;
-      const token = process.env.ACCESS_TOKEN;
+          const pathGroups = ${{ convertToJson(parameters.pathGroups) }};
+          const apiBase = process.env.API_BASE;
+          const token = process.env.ACCESS_TOKEN;
 
-      const run = (cmd) => execSync(cmd, { encoding: 'utf8' }).trim();
+          const run = (cmd) => execSync(cmd, { encoding: 'utf8' }).trim();
 
-      const fetchJson = async (url) => {
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${url}`);
-        return res.json();
-      };
+          const fetchJson = async (url) => {
+            const res = await fetch(url, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${url}`);
+            return res.json();
+          };
 
-      const globToRegex = (pattern) => {
-        const re = pattern
-          .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-          .replace(/\*\*/g, '\0')
-          .replace(/\*/g, '[^/]*')
-          .replace(/\0/g, '.*')
-          .replace(/\?/g, '[^/]');
-        return new RegExp(`^${re}$`);
-      };
+          const globToRegex = (pattern) => {
+            const re = pattern
+              .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+              .replace(/\*\*/g, '\0')
+              .replace(/\*/g, '[^/]*')
+              .replace(/\0/g, '.*')
+              .replace(/\?/g, '[^/]');
+            return new RegExp(`^${re}$`);
+          };
 
-      const matchesAny = (filePath, patterns) =>
-        patterns.some((p) => globToRegex(p).test(filePath));
+          const matchesAny = (filePath, patterns) =>
+            patterns.some((p) => globToRegex(p).test(filePath));
 
-      const setOutput = (name, value) =>
-        console.log(`##vso[task.setvariable variable=${name};isOutput=true]${value}`);
+          const setOutput = (name, value) =>
+            console.log(`##vso[task.setvariable variable=${name};isOutput=true]${value}`);
 
-      const defaultAllTrue = (reason) => {
-        console.log(reason);
-        for (const group of Object.keys(pathGroups)) {
-          setOutput(group, 'true');
-          console.log(`  ${group} = true (default)`);
-        }
-        process.exit(0);
-      };
+          const defaultAllTrue = (reason) => {
+            console.log(reason);
+            for (const group of Object.keys(pathGroups)) {
+              setOutput(group, 'true');
+              console.log(`  ${group} = true (default)`);
+            }
+            process.exit(0);
+          };
 
-      // Get commit SHAs from Build Changes API
-      const changes = await fetchJson(
-        `${apiBase}/build/builds/${process.env.BUILD_BUILDID}/changes?api-version=7.1`,
-      );
-      const shas = changes.value.map((c) => c.id).filter(Boolean);
+          // Get commit SHAs from Build Changes API
+          const changes = await fetchJson(
+            `${apiBase}/build/builds/${process.env.BUILD_BUILDID}/changes?api-version=7.1`,
+          );
+          const shas = changes.value.map((c) => c.id).filter(Boolean);
 
-      let changedPaths;
+          let changedPaths;
 
-      if (process.env.BUILD_REASON === 'PullRequest') {
-        const target = process.env.SYSTEM_PULLREQUEST_TARGETBRANCH.replace('refs/heads/', '');
-        console.log(`PR build — diffing against origin/${target}`);
-        try {
-          changedPaths = run(`git diff --name-only origin/${target}...HEAD`).split('\n').filter(Boolean);
-        } catch {
-          defaultAllTrue('Merge base not in shallow clone — defaulting all groups to true');
-        }
-      } else if (shas.length === 0) {
-        defaultAllTrue('No commits found (manual/re-run) — defaulting all groups to true');
-      } else {
-        for (const sha of shas) {
-          try {
-            run(`git cat-file -e ${sha}`);
-          } catch {
-            defaultAllTrue(`Commit ${sha} not in shallow clone — defaulting all groups to true`);
+          if (process.env.BUILD_REASON === 'PullRequest') {
+            const target = process.env.SYSTEM_PULLREQUEST_TARGETBRANCH
+              .replace('refs/heads/', '');
+            console.log(`PR build — diffing against origin/${target}`);
+            try {
+              changedPaths = run(`git diff --name-only origin/${target}...HEAD`)
+                .split('\n').filter(Boolean);
+            } catch {
+              defaultAllTrue(
+                'Merge base not in shallow clone — defaulting all groups to true',
+              );
+            }
+          } else if (shas.length === 0) {
+            defaultAllTrue(
+              'No commits found (manual/re-run) — defaulting all groups to true',
+            );
+          } else {
+            for (const sha of shas) {
+              try {
+                run(`git cat-file -e ${sha}`);
+              } catch {
+                defaultAllTrue(
+                  `Commit ${sha} not in shallow clone — defaulting all groups to true`,
+                );
+              }
+            }
+
+            changedPaths = [
+              ...new Set(
+                shas.flatMap((sha) =>
+                  run(`git diff-tree --no-commit-id --name-only -r ${sha}`)
+                    .split('\n').filter(Boolean),
+                ),
+              ),
+            ];
           }
-        }
 
-        changedPaths = [
-          ...new Set(
-            shas.flatMap((sha) =>
-              run(`git diff-tree --no-commit-id --name-only -r ${sha}`).split('\n').filter(Boolean),
-            ),
-          ),
-        ];
-      }
+          console.log('Changed paths:');
+          changedPaths.forEach((p) => console.log(`  ${p}`));
+          console.log('');
 
-      console.log('Changed paths:');
-      changedPaths.forEach((p) => console.log(`  ${p}`));
-      console.log('');
-
-      for (const [group, { include = [], exclude = [] }] of Object.entries(pathGroups)) {
-        const matched = changedPaths.some(
-          (p) =>
-            (include.length === 0 || matchesAny(p, include)) &&
-            (exclude.length === 0 || !matchesAny(p, exclude)),
-        );
-        setOutput(group, String(matched));
-        console.log(`  ${group} = ${matched}`);
-      }
-      EOF
-      node /tmp/detect-changed-paths.mjs
-    displayName: Detect changed paths
-    name: pathGroups
-    env:
-      ACCESS_TOKEN: $(System.AccessToken)
-      API_BASE: $(System.CollectionUri)$(System.TeamProject)/_apis
+          for (const [group, { include = [], exclude = [] }] of Object.entries(pathGroups)) {
+            const matched = changedPaths.some(
+              (p) =>
+                (include.length === 0 || matchesAny(p, include)) &&
+                (exclude.length === 0 || !matchesAny(p, exclude)),
+            );
+            setOutput(group, String(matched));
+            console.log(`  ${group} = ${matched}`);
+          }
+          EOF
+          node /tmp/detect-changed-paths.mjs
+        displayName: Detect changed paths
+        name: pathGroups
+        env:
+          ACCESS_TOKEN: $(System.AccessToken)
+          API_BASE: $(System.CollectionUri)$(System.TeamProject)/_apis

@@ -1,0 +1,14 @@
+---
+trigger:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: CI
+    displayName: CI
+    jobs:
+      - template: templates/run-pre-commit.yml
+        parameters:
+          usePnpm: true
