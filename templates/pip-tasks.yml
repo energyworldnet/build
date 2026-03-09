@@ -1,0 +1,41 @@
+---
+parameters:
+  - name: requirementsPath
+    type: string
+    default: requirements.txt
+  - name: cachePath
+    type: string
+    default: $(Pipeline.Workspace)/.pip-cache
+  - name: useCache
+    type: boolean
+    default: true
+
+steps:
+  - script: echo "##vso[task.setvariable variable=PythonVersion;]$(python -VV)"
+    displayName: Get Python Version
+
+  - ${{ if eq(parameters.useCache, true) }}:
+      # Cache pip downloads so subsequent installs don't re-fetch from PyPI
+      - task: Cache@2
+        displayName: Restore pip Cache
+        inputs:
+          key: 'pip | "$(Agent.OS)" | ${{ parameters.requirementsPath }} | "$(PythonVersion)"'
+          restoreKeys: |
+            pip | "$(Agent.OS)" | "$(PythonVersion)"
+            pip | "$(Agent.OS)"
+          path: ${{ parameters.cachePath }}
+          cacheHitVar: PipCacheRestored
+
+  - script: >-
+      pip install
+      --cache-dir=${{ parameters.cachePath }}
+      -r ${{ parameters.requirementsPath }}
+    displayName: Install Python Dependencies
+
+  # Purge the pip cache on inexact hit (restore key fallback) to remove
+  # stale downloads before the cache is re-saved. Skip on exact hit
+  # (already pruned) and complete miss (nothing to prune).
+  - ${{ if eq(parameters.useCache, true) }}:
+      - script: pip cache purge --cache-dir=${{ parameters.cachePath }}
+        condition: eq(variables.PipCacheRestored, 'inexact')
+        displayName: Purge pip Cache
