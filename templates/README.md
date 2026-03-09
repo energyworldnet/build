@@ -40,6 +40,7 @@ manually triggering a build on a non-PR branch.
 | `usePnpm`          | boolean | `false`              | Install and restore pnpm deps              |
 | `pnpmVersion`      | string  | `^10`                | pnpm version constraint                    |
 | `usePnpmCache`     | boolean | `true`               | Cache the pnpm store                       |
+| `usePipCache`      | boolean | `true`               | Cache pip downloads                        |
 | `useTerraform`     | boolean | `false`              | Install Terraform and TFLint               |
 | `skipRefs`         | object  | `[refs/heads/main]`  | Branch refs that skip pre-commit on non-PR |
 | `vmImage`          | string  | `ubuntu-latest`      | Agent pool VM image                        |
@@ -55,6 +56,27 @@ jobs:
         - refs/heads/test
         - refs/heads/main
 ```
+
+## `pip-tasks.yml`
+
+Step template that resolves the Python version, caches pip downloads, and installs dependencies from
+a requirements file.
+
+| Parameter          | Type    | Default            | Purpose                      |
+| ------------------ | ------- | ------------------ | ---------------------------- |
+| `cachePath`        | string  | _(see template)_   | pip download cache directory |
+| `requirementsPath` | string  | `requirements.txt` | Path to requirements file    |
+| `useCache`         | boolean | `true`             | Cache pip downloads          |
+
+```yaml
+steps:
+  - template: templates/pip-tasks.yml@build
+    parameters:
+      requirementsPath: requirements.txt
+```
+
+The template sets a `PythonVersion` pipeline variable that callers can reference (e.g., for a
+pre-commit cache key).
 
 ## `pnpm-tasks.yml`
 
