@@ -19,6 +19,9 @@ parameters:
   - name: usePnpmCache
     type: boolean
     default: true
+  - name: usePipCache
+    type: boolean
+    default: true
   - name: useTerraform
     type: boolean
     default: false
@@ -93,17 +96,16 @@ jobs:
                 https://raw.githubusercontent.com/terraform-linters/tflint/v0.58.0/install_linux.sh"
               curl -s $INSTALL_URL | bash
             displayName: Install TFLint
+      - template: pip-tasks.yml
+        parameters:
+          useCache: ${{ parameters.usePipCache }}
       # Adapted from pre-commit docs:
       # https://pre-commit.com/index.html#azure-pipelines-example
-      - script: echo "##vso[task.setvariable variable=PythonVersion;]$(python -VV)"
-        displayName: Get Python Version
       - task: Cache@2
         displayName: Restore Pre-Commit Cache
         inputs:
           key: pre-commit | .pre-commit-config.yaml | "$(PythonVersion)"
           path: $(PRE_COMMIT_HOME)
-      - script: pip install -r requirements.txt
-        displayName: Install Python Dependencies
       - script: |
           pre-commit run \
             --color=always \
