@@ -17,7 +17,6 @@ If (-Not $SkipWinget) {
   $Principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
   If ($Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Error "Do not run this script as an administrator. Close this window and try again."
-    Exit 1
   }
 
   Write-Host "Configuring Windows..." -ForegroundColor Cyan
@@ -32,11 +31,14 @@ If (-Not $SkipWinget) {
 
 Write-Host "Installing pnpm packages..." -ForegroundColor Cyan
 pnpm install --frozen-lockfile
+If ($LASTEXITCODE -Ne 0) { Exit $LASTEXITCODE }
 
 Write-Host "Installing Python packages..." -ForegroundColor Cyan
 py -m pip install -r requirements.txt
+If ($LASTEXITCODE -Ne 0) { Exit $LASTEXITCODE }
 
 Write-Host "Installing pre-commit hooks..." -ForegroundColor Cyan
 pre-commit install --install-hooks --overwrite
+If ($LASTEXITCODE -Ne 0) { Exit $LASTEXITCODE }
 
 Write-Host "Done! You're good to go." -ForegroundColor Green
