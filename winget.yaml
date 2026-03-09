@@ -1,0 +1,95 @@
+---
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+# https://learn.microsoft.com/en-us/windows/package-manager/configuration/create
+properties:
+  configurationVersion: 0.2.0
+  resources:
+    - resource: Microsoft.Windows.Developer/DeveloperMode
+      directives:
+        description: Enable Developer Mode
+        allowPrerelease: true
+      settings:
+        Ensure: Present
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      directives:
+        description: Install Git
+      id: git
+      settings:
+        id: Git.Git
+        source: winget
+        useLatest: true
+    - resource: xPSDesiredStateConfiguration/xScript
+      dependsOn: [git]
+      directives:
+        description: Prepend Git to PATH variable
+        securityContext: elevated
+      id: gitPath
+      settings:
+        GetScript: |
+          $BashPath = Get-Command bash -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty Source
+          @{ Result = $BashPath }
+        TestScript: |
+          $BashPath = Get-Command bash -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty Source
+          $BashPath -Ne $null -And $BashPath.StartsWith("$env:PROGRAMFILES\Git\bin")
+        SetScript: |
+          # Preserve unexpanded variables
+          $RegPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+          $Current = (Get-Item -Path $RegPath).GetValue(`
+            "Path", "", [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+          # Prepend to support pre-commit
+          # https://github.com/pre-commit/pre-commit/issues/3091#issuecomment-1848626206
+          $GitBinPath = "%PROGRAMFILES%\Git\bin"
+          $New = @($GitBinPath) + [Linq.Enumerable]::Except[object](`
+            $Current.Split(";"), @($GitBinPath, "$env:PROGRAMFILES\Git\bin")) -Join ";"
+          [Environment]::SetEnvironmentVariable("Path", $New.TrimEnd(";"), "Machine")
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      directives:
+        description: Install NodeJS
+      id: nodejs
+      settings:
+        id: OpenJS.NodeJS.LTS
+        version: 24.11.1
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      directives:
+        description: Install pnpm
+      id: pnpm
+      settings:
+        id: pnpm.pnpm
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      directives:
+        description: Install Python Launcher
+      id: pythonLauncher
+      settings:
+        id: Python.Launcher
+        source: winget
+        useLatest: true
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      directives:
+        description: Install Python
+      id: python3
+      settings:
+        id: Python.Python.3.13
+        source: winget
+        useLatest: true
+    # HACK: Windows expects Python to be installed from the Microsoft Store,
+    # but we use winget. There appears to be no Windows API for App Execution
+    # Aliases, so we delete the file.
+    # https://superuser.com/a/1746939
+    - resource: xPSDesiredStateConfiguration/xScript
+      directives:
+        description: Remove Python App Execution Alias
+      id: pythonAppAlias
+      settings:
+        GetScript: |
+          $AliasPath = "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe"
+          @{ Result = (Test-Path $AliasPath) }
+        TestScript: |
+          $AliasPath = "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe"
+          -Not (Test-Path $AliasPath)
+        SetScript: |
+          $AliasPath = "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe"
+          Remove-Item $AliasPath -Force -ErrorAction SilentlyContinue
