@@ -1,1 +1,2 @@
 pre-commit==4.5.1
+# test: trigger inexact pip cache hit
