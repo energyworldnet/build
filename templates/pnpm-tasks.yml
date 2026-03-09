@@ -47,8 +47,10 @@ steps:
       pnpm install --prefer-frozen-lockfile --resolution-only
     displayName: Restore pnpm
 
-  # Prune the pnpm store on cache miss to prevent unused dependencies from being re-cached
+  # Prune the pnpm store on inexact cache hit (restore key fallback) to
+  # remove stale dependencies before the store is re-cached. Skip on exact
+  # hit (already pruned) and complete miss (nothing to prune).
   - ${{ if eq(parameters.useCache, true) }}:
       - script: pnpm store prune
-        condition: ne(variables.PnpmCacheRestored, 'true')
+        condition: eq(variables.PnpmCacheRestored, 'inexact')
         displayName: Prune pnpm Store
