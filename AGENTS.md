@@ -22,7 +22,7 @@ resources:
 - Environment names are hardcoded in deployment templates so Azure DevOps can enforce template
   requirements
 - Use `.yml` extension (not `.yaml`) for all templates
-- `pnpm-variables.yml` must always be included in a job's variables alongside `pnpm-tasks.yml`
+- `pnpm-tasks.yml` accepts a `storePath` parameter (defaults to `$(Pipeline.Workspace)/.pnpm-store`)
 
 ## Templates
 
@@ -30,9 +30,7 @@ resources:
   Terraform toolchains. Non-PR builds on branches not in `skipRefs` fail to prevent bypassing
   pre-commit.
 - `pnpm-tasks.yml` — Step template that installs pnpm, authenticates against an internal npm feed,
-  and restores dependencies. Requires `pnpm-variables.yml`.
-- `pnpm-variables.yml` — Variable template that sets `PnpmStorePath`. Always pair with
-  `pnpm-tasks.yml`.
+  and restores dependencies.
 - `detect-changed-paths.yml` — Job template for path-based change detection. Outputs boolean
   variables per path group.
 - `publish-github-pages.yml` — Job template that deploys a build artifact to the `gh-pages` branch.

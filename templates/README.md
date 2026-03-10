@@ -83,28 +83,17 @@ pre-commit cache key).
 Step template that installs pnpm, authenticates against an internal npm feed, and restores
 dependencies.
 
-| Parameter  | Type    | Default | Purpose                 |
-| ---------- | ------- | ------- | ----------------------- |
-| `version`  | string  | `^10`   | pnpm version constraint |
-| `useCache` | boolean | `true`  | Cache the pnpm store    |
+| Parameter | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `storePath` | string | `$(Pipeline.Workspace)/.pnpm-store` | pnpm store cache directory |
+| `useCache` | boolean | `true` | Cache the pnpm store |
+| `version` | string | `^10` | pnpm version constraint |
 
 ```yaml
 steps:
   - template: templates/pnpm-tasks.yml@build
     parameters:
       useCache: false
-```
-
-**Important:** Always include `pnpm-variables.yml` in the job's variables when using this template.
-
-## `pnpm-variables.yml`
-
-Variable template that sets the `PnpmStorePath` variable used by `pnpm-tasks.yml`. Must always be
-included alongside `pnpm-tasks.yml`.
-
-```yaml
-variables:
-  - template: templates/pnpm-variables.yml@build
 ```
 
 ## `publish-github-pages.yml`

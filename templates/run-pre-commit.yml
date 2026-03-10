@@ -121,5 +121,3 @@ jobs:
         value: $(Build.SourcesDirectory)/.npmrc
       - name: PRE_COMMIT_HOME
         value: $(Pipeline.Workspace)/pre-commit-cache
-      - ${{ if eq(parameters.usePnpm, true) }}:
-          - template: pnpm-variables.yml
