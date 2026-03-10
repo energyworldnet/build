@@ -1,11 +1,14 @@
 ---
 parameters:
-  - name: version
+  - name: storePath
     type: string
-    default: ^10
+    default: $(Pipeline.Workspace)/.pnpm-store
   - name: useCache
     type: boolean
     default: true
+  - name: version
+    type: string
+    default: ^10
 
 steps:
   # Pin the major pnpm version so we don't have compatibility issues with new lock file formats
@@ -15,7 +18,7 @@ steps:
   - ${{ if eq(parameters.useCache, true) }}:
       # Set the pnpm store path explicitly to have a reliable path for caching
       # https://pnpm.io/faq#does-pnpm-work-across-multiple-drives-or-filesystems
-      - script: pnpm config set store-dir $(PnpmStorePath)
+      - script: pnpm config set store-dir ${{ parameters.storePath }}
         displayName: Set pnpm Store Path
 
       # Cache pnpm store since it can be fairly large in size. It should be faster to restore cache
@@ -27,7 +30,7 @@ steps:
           restoreKeys: |
             pnpm | "$(Agent.OS)"
             pnpm
-          path: $(PnpmStorePath)
+          path: ${{ parameters.storePath }}
           cacheHitVar: PnpmCacheRestored
 
   # Authenticate against our internal npm feed in Azure Artifacts
