@@ -43,6 +43,7 @@ manually triggering a build on a non-PR branch.
 | `usePipCache`      | boolean | `true`               | Cache pip downloads                        |
 | `useTerraform`     | boolean | `false`              | Install Terraform and TFLint               |
 | `skipRefs`         | object  | `[refs/heads/main]`  | Branch refs that skip pre-commit on non-PR |
+| `nodeVersion`      | string  | `24.x`               | Node.js version to install                 |
 | `vmImage`          | string  | `ubuntu-latest`      | Agent pool VM image                        |
 
 ```yaml
