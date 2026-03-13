@@ -29,6 +29,9 @@ parameters:
     type: object
     default:
       - refs/heads/main
+  - name: nodeVersion
+    type: string
+    default: 24.x
   - name: vmImage
     type: string
     default: ubuntu-latest
@@ -68,6 +71,10 @@ jobs:
       # This is necessary to do a diff between the PR and the target branch
       - script: git fetch --no-tags --depth=1 origin +refs/heads/*:refs/remotes/origin/*
         displayName: Fetch Branches
+      - task: UseNode@1
+        displayName: Use Node ${{ parameters.nodeVersion }}
+        inputs:
+          version: ${{ parameters.nodeVersion }}
       - ${{ if eq(parameters.useDotNet, true) }}:
           - task: NuGetAuthenticate@1
             displayName: Authenticate NuGet Internal
